@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Digital Clock & Stopwatch</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #080810;
+      --surface: #0f0f1a;
+      --surface2: #16162a;
+      --border: #2a2a4a;
+      --purple: #9b59f5;
+      --purple2: #c084fc;
+      --purple3: #6d28d9;
+      --text: #f0f0ff;
+      --muted: #6666aa;
+      --font: 'Orbitron', monospace;
+      --body: 'Inter', sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--body);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow-x: hidden;
+    }
+
+    /* Background */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse at 20% 50%, rgba(155,89,245,0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 20%, rgba(192,132,252,0.06) 0%, transparent 40%),
+        linear-gradient(rgba(155,89,245,0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(155,89,245,0.02) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+      pointer-events: none;
+    }
+
+    /* HEADER */
+    header {
+      width: 100%;
+      padding: 24px 40px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+    }
+    .header-title {
+      font-family: var(--font);
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      color: var(--purple2);
+    }
+    .header-dot {
+      width: 8px; height: 8px;
+      background: var(--purple);
+      border-radius: 50%;
+      position: absolute; right: 40px;
+      animation: pulse 2s infinite;
+      box-shadow: 0 0 10px var(--purple);
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.7); }
+    }
+
+    /* TABS */
+    .tabs {
+      display: flex;
+      gap: 0;
+      margin: 48px 0 0;
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .tab-btn {
+      padding: 14px 48px;
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-family: var(--font);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.3s;
+      position: relative;
+    }
+    .tab-btn.active {
+      background: rgba(155,89,245,0.15);
+      color: var(--purple2);
+    }
+    .tab-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--purple), var(--purple2));
+    }
+    .tab-btn:hover:not(.active) { color: var(--text); background: rgba(255,255,255,0.03); }
+
+    /* PANELS */
+    .panel { display: none; width: 100%; max-width: 700px; padding: 60px 20px; }
+    .panel.active { display: flex; flex-direction: column; align-items: center; }
+
+    /* ===== CLOCK PANEL ===== */
+    .clock-wrapper {
+      text-align: center;
+      width: 100%;
+    }
+    .date-display {
+      font-family: var(--font);
+      font-size: 13px;
+      color: var(--muted);
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      margin-bottom: 32px;
+    }
+    .clock-display {
+      position: relative;
+      display: inline-block;
+      margin-bottom: 40px;
+    }
+    .clock-display::before {
+      content: '';
+      position: absolute;
+      inset: -20px;
+      background: radial-gradient(circle, rgba(155,89,245,0.1) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .time-main {
+      font-family: var(--font);
+      font-size: clamp(60px, 15vw, 110px);
+      font-weight: 900;
+      letter-spacing: 4px;
+      line-height: 1;
+      background: linear-gradient(135deg, var(--purple2), var(--purple), #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: none;
+      filter: drop-shadow(0 0 20px rgba(155,89,245,0.4));
+    }
+    .time-seconds {
+      font-family: var(--font);
+      font-size: clamp(28px, 6vw, 48px);
+      font-weight: 700;
+      color: var(--purple);
+      letter-spacing: 3px;
+      opacity: 0.7;
+      display: block;
+      margin-top: 8px;
+    }
+    .ampm {
+      font-family: var(--font);
+      font-size: 20px;
+      color: var(--purple2);
+      letter-spacing: 3px;
+      margin-top: 16px;
+      display: block;
+    }
+    .clock-info-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px;
+      width: 100%;
+      margin-top: 20px;
+    }
+    .clock-info-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 20px 16px;
+      text-align: center;
+      transition: border-color 0.3s;
+    }
+    .clock-info-box:hover { border-color: var(--purple); }
+    .clock-info-label {
+      font-family: var(--font);
+      font-size: 9px;
+      color: var(--muted);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .clock-info-value {
+      font-family: var(--font);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--purple2);
+      letter-spacing: 2px;
+    }
+
+    /* ===== STOPWATCH PANEL ===== */
+    .sw-display {
+      font-family: var(--font);
+      font-size: clamp(56px, 14vw, 100px);
+      font-weight: 900;
+      letter-spacing: 4px;
+      line-height: 1;
+      text-align: center;
+      background: linear-gradient(135deg, #fff, var(--purple2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 12px;
+      filter: drop-shadow(0 0 15px rgba(155,89,245,0.3));
+      transition: filter 0.3s;
+    }
+    .sw-display.running {
+      filter: drop-shadow(0 0 25px rgba(155,89,245,0.6));
+    }
+    .sw-ms {
+      font-family: var(--font);
+      font-size: clamp(28px, 7vw, 50px);
+      color: var(--purple);
+      letter-spacing: 4px;
+      opacity: 0.6;
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    .sw-btns {
+      display: flex; gap: 16px; flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 48px;
+    }
+    .sw-btn {
+      padding: 16px 36px;
+      font-family: var(--font);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      border: none; cursor: pointer;
+      transition: all 0.2s;
+      min-width: 140px;
+    }
+    .sw-btn-start {
+      background: linear-gradient(135deg, var(--purple3), var(--purple));
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(155,89,245,0.3);
+    }
+    .sw-btn-start:hover { transform: translateY(-3px); box-shadow: 0 8px 30px rgba(155,89,245,0.5); }
+    .sw-btn-pause {
+      background: linear-gradient(135deg, #b45309, #f59e0b);
+      color: #000;
+      box-shadow: 0 4px 20px rgba(245,158,11,0.2);
+      display: none;
+    }
+    .sw-btn-pause:hover { transform: translateY(-3px); }
+    .sw-btn-reset {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+    .sw-btn-reset:hover { border-color: var(--purple); color: var(--purple); }
+    .sw-btn-lap {
+      background: transparent;
+      color: var(--purple2);
+      border: 1px solid rgba(155,89,245,0.4);
+    }
+    .sw-btn-lap:hover { background: rgba(155,89,245,0.1); }
+
+    /* Laps */
+    .laps-container {
+      width: 100%;
+      max-height: 280px;
+      overflow-y: auto;
+    }
+    .laps-container::-webkit-scrollbar { width: 3px; }
+    .laps-container::-webkit-scrollbar-thumb { background: var(--purple); }
+    .laps-header {
+      display: grid; grid-template-columns: 60px 1fr 1fr;
+      padding: 12px 16px;
+      font-family: var(--font);
+      font-size: 9px;
+      color: var(--muted);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+    }
+    .lap-row {
+      display: grid; grid-template-columns: 60px 1fr 1fr;
+      padding: 14px 16px;
+      font-family: var(--font);
+      font-size: 13px;
+      border-bottom: 1px solid rgba(42,42,74,0.5);
+      animation: lapIn 0.3s ease;
+      transition: background 0.2s;
+    }
+    .lap-row:hover { background: rgba(155,89,245,0.05); }
+    .lap-row:first-child { color: var(--purple2); }
+    @keyframes lapIn {
+      from { opacity: 0; transform: translateX(-10px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    .lap-num { color: var(--muted); }
+    .lap-split { color: var(--purple2); }
+    .lap-total { color: var(--text); }
+
+    /* STATUS BAR */
+    .status-bar {
+      width: 100%; max-width: 700px;
+      padding: 12px 20px;
+      display: flex; justify-content: center; gap: 8px;
+      align-items: center;
+      font-family: var(--font);
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 2px;
+    }
+    .status-dot {
+      width: 6px; height: 6px;
+      background: var(--purple);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 500px) {
+      .tabs { width: 90%; }
+      .tab-btn { padding: 14px 24px; font-size: 10px; }
+      .sw-btns { gap: 12px; }
+      .sw-btn { min-width: 120px; padding: 14px 20px; }
+      .clock-info-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-title">⏱ TimeMaster</div>
+    <div class="header-dot"></div>
+  </header>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('clock')">Clock</button>
+    <button class="tab-btn" onclick="switchTab('stopwatch')">Stopwatch</button>
+  </div>
+
+  <!-- CLOCK PANEL -->
+  <div class="panel active" id="panel-clock">
+    <div class="clock-wrapper">
+      <div class="date-display" id="dateDisplay">---</div>
+      <div class="clock-display">
+        <div class="time-main" id="timeMain">00:00</div>
+        <span class="time-seconds" id="timeSeconds">:00</span>
+        <span class="ampm" id="ampm">AM</span>
+      </div>
+      <div class="clock-info-grid">
+        <div class="clock-info-box">
+          <div class="clock-info-label">Day</div>
+          <div class="clock-info-value" id="dayName">---</div>
+        </div>
+        <div class="clock-info-box">
+          <div class="clock-info-label">Week</div>
+          <div class="clock-info-value" id="weekNum">--</div>
+        </div>
+        <div class="clock-info-box">
+          <div class="clock-info-label">Timezone</div>
+          <div class="clock-info-value" id="timezone">---</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STOPWATCH PANEL -->
+  <div class="panel" id="panel-stopwatch">
+    <div class="sw-display" id="swDisplay">00:00</div>
+    <div class="sw-ms" id="swMs">.000</div>
+    <div class="sw-btns">
+      <button class="sw-btn sw-btn-start" id="btnStart" onclick="startSW()">▶ START</button>
+      <button class="sw-btn sw-btn-pause" id="btnPause" onclick="pauseSW()">⏸ PAUSE</button>
+      <button class="sw-btn sw-btn-lap" id="btnLap" onclick="lapSW()">⊕ LAP</button>
+      <button class="sw-btn sw-btn-reset" onclick="resetSW()">↺ RESET</button>
+    </div>
+    <div style="width:100%; background:var(--surface); border:1px solid var(--border);">
+      <div class="laps-header">
+        <span>LAP</span><span>SPLIT</span><span>TOTAL</span>
+      </div>
+      <div class="laps-container" id="lapsContainer"></div>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <div class="status-dot"></div>
+    <span>TIMEMASTER v1.0 — Built by Rockey Kumar</span>
+  </div>
+
+  <script>
+    // ===== TAB SWITCHING =====
+    function switchTab(tab) {
+      document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+        btn.classList.toggle('active', (i === 0 && tab === 'clock') || (i === 1 && tab === 'stopwatch'));
+      });
+      document.getElementById('panel-clock').classList.toggle('active', tab === 'clock');
+      document.getElementById('panel-stopwatch').classList.toggle('active', tab === 'stopwatch');
+    }
+
+    // ===== DIGITAL CLOCK =====
+    const days = ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'];
+    const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+
+    function getWeekNumber(d) {
+      const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+      const dayNum = date.getUTCDay() || 7;
+      date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+      const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+      return Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+    }
+
+    function updateClock() {
+      const now = new Date();
+      let h = now.getHours();
+      const m = now.getMinutes();
+      const s = now.getSeconds();
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      h = h % 12 || 12;
+
+      document.getElementById('timeMain').textContent =
+        String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+      document.getElementById('timeSeconds').textContent =
+        ':' + String(s).padStart(2,'0');
+      document.getElementById('ampm').textContent = ampm;
+
+      const d = now.getDate();
+      const mo = months[now.getMonth()];
+      const yr = now.getFullYear();
+      document.getElementById('dateDisplay').textContent =
+        `${days[now.getDay()].slice(0,3)}, ${d} ${mo} ${yr}`;
+      document.getElementById('dayName').textContent = days[now.getDay()].slice(0,3);
+      document.getElementById('weekNum').textContent = 'W' + getWeekNumber(now);
+
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      document.getElementById('timezone').textContent = tz.split('/')[1] || tz;
+    }
+
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    // ===== STOPWATCH =====
+    let swRunning = false;
+    let swStartTime = 0;
+    let swElapsed = 0;
+    let swInterval = null;
+    let swLaps = [];
+    let swLastLap = 0;
+
+    function formatTime(ms) {
+      const totalSec = Math.floor(ms / 1000);
+      const min = Math.floor(totalSec / 60);
+      const sec = totalSec % 60;
+      return String(min).padStart(2,'0') + ':' + String(sec).padStart(2,'0');
+    }
+    function formatMs(ms) {
+      return '.' + String(ms % 1000).padStart(3,'0');
+    }
+
+    function updateSWDisplay() {
+      const now = swElapsed + (swRunning ? Date.now() - swStartTime : 0);
+      document.getElementById('swDisplay').textContent = formatTime(now);
+      document.getElementById('swMs').textContent = formatMs(now);
+    }
+
+    function startSW() {
+      if (swRunning) return;
+      swRunning = true;
+      swStartTime = Date.now();
+      swInterval = setInterval(updateSWDisplay, 30);
+      document.getElementById('btnStart').style.display = 'none';
+      document.getElementById('btnPause').style.display = 'inline-block';
+      document.getElementById('swDisplay').classList.add('running');
+    }
+
+    function pauseSW() {
+      if (!swRunning) return;
+      swRunning = false;
+      swElapsed += Date.now() - swStartTime;
+      clearInterval(swInterval);
+      document.getElementById('btnStart').style.display = 'inline-block';
+      document.getElementById('btnStart').textContent = '▶ RESUME';
+      document.getElementById('btnPause').style.display = 'none';
+      document.getElementById('swDisplay').classList.remove('running');
+    }
+
+    function resetSW() {
+      swRunning = false;
+      swElapsed = 0;
+      swLastLap = 0;
+      swLaps = [];
+      clearInterval(swInterval);
+      document.getElementById('swDisplay').textContent = '00:00';
+      document.getElementById('swMs').textContent = '.000';
+      document.getElementById('btnStart').style.display = 'inline-block';
+      document.getElementById('btnStart').textContent = '▶ START';
+      document.getElementById('btnPause').style.display = 'none';
+      document.getElementById('swDisplay').classList.remove('running');
+      document.getElementById('lapsContainer').innerHTML = '';
+    }
+
+    function lapSW() {
+      if (!swRunning) return;
+      const now = swElapsed + (Date.now() - swStartTime);
+      const split = now - swLastLap;
+      swLastLap = now;
+      swLaps.unshift({ num: swLaps.length + 1, split, total: now });
+
+      const container = document.getElementById('lapsContainer');
+      const row = document.createElement('div');
+      row.className = 'lap-row';
+      row.innerHTML = `
+        <span class="lap-num">LAP ${swLaps[0].num}</span>
+        <span class="lap-split">${formatTime(split)}${formatMs(split)}</span>
+        <span class="lap-total">${formatTime(now)}${formatMs(now)}</span>
+      `;
+      container.insertBefore(row, container.firstChild);
+    }
+  </script>
+</body>
+</html>
